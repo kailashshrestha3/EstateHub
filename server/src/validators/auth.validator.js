@@ -1,0 +1,7 @@
+import z from "zod";
+
+export const registerSchema = z.object({
+    username: z.string().trim().min(3, 'Username must be at least 3 characters long'),
+    email: z.string().trim().email("Please provide a valid email").toLowerCase().min(3, 'Email must be at least 3 characters long'),
+    password: z.string().trim().min(6, 'Password must be at least 6 characters long'),
+})
