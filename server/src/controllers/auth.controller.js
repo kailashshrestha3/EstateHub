@@ -1,6 +1,9 @@
 import bcrypt from "bcryptjs";
 import User from "../models/user.model.js";
 import generateToken from "../utils/generateToken.js";
+import RefreshToken from "../models/refresh-token.model.js";
+import generateRefreshToken from "../utils/generateRefreshToken.js";
+import hashToken from "../utils/hashToken.js";
 
 export const register = async (req, res) => {
     try {
@@ -64,13 +67,34 @@ export const login = async (req, res) => {
             });
         }
 
-        // 3. Generate JWT
-        const token = generateToken(user._id, user.role);
+        const accessToken = generateToken(user._id, user.role);
+
+        // 4. Generate refresh token
+        const refreshToken = generateRefreshToken();
+
+        // 5. Hash refresh token
+        const tokenHash = hashToken(refreshToken);
+
+        // 6. Save hashed refresh token
+        await RefreshToken.create({
+            user: user._id,
+            tokenHash,
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        });
+
+        // 7. Send refresh token as HttpOnly cookie
+        res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+            path: "/api/auth"
+        });
 
         // 4. Send response
         return res.status(200).json({
             message: "Login successful",
-            token,
+            accessToken,
             user: {
                 id: user._id,
                 name: user.name,
