@@ -132,3 +132,110 @@ export const getMe = async (req, res) => {
         });
     }
 };
+
+export const refreshAccessToken = async (req, res) => {
+    try {
+        // 1. Get refresh token from cookie
+        const refreshToken = req.cookies.refreshToken;
+
+        if (!refreshToken) {
+            return res.status(401).json({
+                message: "Refresh token required"
+            });
+        }
+
+        // 2. Hash the received token
+        const tokenHash = hashToken(refreshToken);
+
+        // 3. Find the stored token
+        const storedToken = await RefreshToken.findOne({
+            tokenHash,
+            revokedAt: null,
+            expiresAt: { $gt: new Date() }
+        });
+
+        if (!storedToken) {
+            return res.status(401).json({
+                message: "Invalid or expired refresh token"
+            });
+        }
+
+        // 4. Find the user
+        const user = await User.findById(storedToken.user);
+
+        if (!user) {
+            return res.status(401).json({
+                message: "User not found"
+            });
+        }
+
+        // 5. Revoke old refresh token
+        storedToken.revokedAt = new Date();
+        await storedToken.save();
+
+        // 6. Generate new tokens
+        const newAccessToken = generateToken(user._id, user.role);
+        const newRefreshToken = generateRefreshToken();
+
+        // 7. Store new refresh token hash
+        await RefreshToken.create({
+            user: user._id,
+            tokenHash: hashToken(newRefreshToken),
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        });
+
+        // 8. Set new refresh cookie
+        res.cookie("refreshToken", newRefreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+            path: "/api/auth"
+        });
+
+        return res.status(200).json({
+            message: "Access token refreshed",
+            accessToken: newAccessToken
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            message: "Token refresh failed",
+            error: error.message
+        });
+    }
+};
+export const logout = async (req, res) => {
+    try {
+        const refreshToken = req.cookies.refreshToken;
+
+        if (refreshToken) {
+            const tokenHash = hashToken(refreshToken);
+
+            await RefreshToken.findOneAndUpdate(
+                {
+                    tokenHash,
+                    revokedAt: null
+                },
+                {
+                    $set: { revokedAt: new Date() }
+                }
+            );
+        }
+
+        res.clearCookie("refreshToken", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            path: "/api/auth"
+        });
+
+        return res.status(200).json({
+            message: "Logged out successfully"
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: "Logout failed"
+        });
+    }
+};
