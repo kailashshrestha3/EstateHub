@@ -14,13 +14,10 @@ const authenticate = (req, res, next) => {
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-
         // Attach user information to request
         req.user = decoded;
 
         // console.log("req.user", req.user) {id, role, iat, exp}
-
-
 
         next();
 

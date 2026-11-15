@@ -15,10 +15,7 @@ router.get("/me", authenticate, getMe);
 
 router.post("/refresh", refreshAccessToken);
 
-router.get(
-    "/admin-test",
-    authenticate,
-    authorize("admin"),
+router.get("/admin-test", authenticate, authorize("admin"),
     (req, res) => {
         res.status(200).json({
             message: "Welcome Admin!",

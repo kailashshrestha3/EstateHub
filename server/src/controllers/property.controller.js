@@ -36,3 +36,22 @@ export const createProperty = async (req, res) => {
         });
     }
 };
+
+export const getAllProperties = async (req, res) => {
+    try {
+        const properties = await Property.find({
+            status: "approved"
+        }).sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            message: "Properties fetched successfully",
+            count: properties.length,
+            properties
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: "Failed to fetch properties",
+            error: error.message
+        });
+    }
+};
