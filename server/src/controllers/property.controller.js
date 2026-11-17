@@ -82,3 +82,88 @@ export const getPropertyById = async (req, res) => {
         });
     }
 };
+
+export const updateProperty = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const property = await Property.findOne({
+            _id: id,
+            seller: req.user.id
+        });
+
+        if (!property) {
+            return res.status(404).json({
+                message: "Property not found"
+            });
+        }
+
+        Object.assign(property, req.body);
+
+        await property.save();
+
+        return res.status(200).json({
+            message: "Property updated successfully",
+            property
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: "Failed to update property",
+            error: error.message
+        });
+    }
+};
+
+export const deleteProperty = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const property = await Property.findOneAndDelete({
+            _id: id,
+            seller: req.user.id
+        });
+
+        if (!property) {
+            return res.status(404).json({
+                message: "Property not found"
+            });
+        }
+
+        return res.status(200).json({
+            message: "Property deleted successfully"
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: "Failed to delete property",
+            error: error.message
+        });
+    }
+};
+
+export const approveProperty = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const property = await Property.findByIdAndUpdate(
+            id,
+            { status: "approved" },
+            { new: true, runValidators: true }
+        );
+
+        if (!property) {
+            return res.status(404).json({
+                message: "Property not found"
+            });
+        }
+
+        return res.status(200).json({
+            message: "Property approved successfully",
+            property
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: "Failed to approve property",
+            error: error.message
+        });
+    }
+};

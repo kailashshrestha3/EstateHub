@@ -17,3 +17,10 @@ export const createPropertySchema = z.object({
 
     images: z.array(z.string().url()).optional()
 });
+
+export const updatePropertySchema = createPropertySchema
+    .partial()
+    .refine(
+        (data) => Object.keys(data).length > 0,
+        "At least one field is required to update"
+    );
