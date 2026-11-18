@@ -39,9 +39,44 @@ export const createProperty = async (req, res) => {
 
 export const getAllProperties = async (req, res) => {
     try {
-        const properties = await Property.find({
+        const {
+            location,
+            propertyType,
+            minPrice,
+            maxPrice,
+            bedrooms
+        } = req.query;
+
+        const filter = {
             status: "approved"
-        }).sort({ createdAt: -1 });
+        }
+
+        if (location) {
+            filter.location = {
+                $regex: location,
+                $options: "i"
+            };
+        }
+        if (propertyType) {
+            filter.propertyType = propertyType;
+        }
+
+        if (minPrice !== undefined || maxPrice !== undefined) {
+            filter.price = {};
+
+            if (minPrice !== undefined) {
+                filter.price.$gte = Number(minPrice);
+            }
+
+            if (maxPrice !== undefined) {
+                filter.price.$lte = Number(maxPrice);
+            }
+        }
+
+        if (bedrooms !== undefined) {
+            filter.bedrooms = Number(bedrooms);
+        }
+        const properties = await Property.find(filter).sort({ createdAt: -1 });
 
         return res.status(200).json({
             message: "Properties fetched successfully",
@@ -202,7 +237,7 @@ export const getPendingProperties = async (req, res) => {
         const properties = await Property.find({
             status: "pending"
         })
-            .populate("seller", "name email")
+            .populate("seller", "username email")
             .sort({ createdAt: -1 });
 
         return res.status(200).json({
@@ -218,3 +253,21 @@ export const getPendingProperties = async (req, res) => {
     }
 };
 
+export const getAllPropertiesForAdmin = async (req, res) => {
+    try {
+        const properties = await Property.find()
+            .populate("seller", "username email")
+            .sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            message: "All properties fetched successfully",
+            count: properties.length,
+            properties
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: "Failed to fetch properties",
+            error: error.message
+        });
+    }
+};
