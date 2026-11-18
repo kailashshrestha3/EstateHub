@@ -150,6 +150,7 @@ export const approveProperty = async (req, res) => {
             { new: true, runValidators: true }
         );
 
+
         if (!property) {
             return res.status(404).json({
                 message: "Property not found"
@@ -167,3 +168,53 @@ export const approveProperty = async (req, res) => {
         });
     }
 };
+
+export const rejectProperty = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const property = await Property.findByIdAndUpdate(
+            id,
+            { status: "rejected" },
+            { new: true, runValidators: true }
+        );
+
+        if (!property) {
+            return res.status(404).json({
+                message: "Property not found"
+            });
+        }
+
+        return res.status(200).json({
+            message: "Property rejected successfully",
+            property
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: "Failed to reject property",
+            error: error.message
+        });
+    }
+};
+
+export const getPendingProperties = async (req, res) => {
+    try {
+        const properties = await Property.find({
+            status: "pending"
+        })
+            .populate("seller", "name email")
+            .sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            message: "Pending properties fetched successfully",
+            count: properties.length,
+            properties
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: "Failed to fetch pending properties",
+            error: error.message
+        });
+    }
+};
+
