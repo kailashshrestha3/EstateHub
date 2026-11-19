@@ -271,3 +271,22 @@ export const getAllPropertiesForAdmin = async (req, res) => {
         });
     }
 };
+
+// export const getMyProperties = async (req, res) => {
+//     try {
+//         const properties = await Property.find({ seller: req.user.id })
+//             .populate("seller", "username email")
+//             .sort({ createdAt: -1 });
+
+//         return res.status(200).json({
+//             message: "My properties fetched successfully",
+//             count: properties.length,
+//             properties
+//         });
+//     } catch (error) {
+//         return res.status(500).json({
+//             message: "Failed to fetch my properties",
+//             error: error.message
+//         });
+//     }
+// };
