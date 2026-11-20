@@ -71,12 +71,42 @@ export const getAllProperties = async (req, res) => {
             if (maxPrice !== undefined) {
                 filter.price.$lte = Number(maxPrice);
             }
+
+            if (minPrice !== undefined && (!Number.isFinite(Number(minPrice)) || Number(minPrice) < 0)
+            ) {
+                return res.status(400).json({
+                    message: "Minimum price must be a valid non-negative number"
+                });
+            }
+
+            if (maxPrice !== undefined && (!Number.isFinite(Number(maxPrice)) || Number(maxPrice) < 0)
+            ) {
+                return res.status(400).json({
+                    message: "Maximum price must be a valid non-negative number"
+                });
+            }
+            if (
+                minPrice !== undefined &&
+                maxPrice !== undefined &&
+                Number(minPrice) > Number(maxPrice)
+            ) {
+                return res.status(400).json({
+                    message: "Minimum price cannot be greater than maximum price"
+                });
+            }
         }
 
         if (bedrooms !== undefined) {
             filter.bedrooms = Number(bedrooms);
         }
-        const properties = await Property.find(filter).sort({ createdAt: -1 });
+        const page = Number(req.query.page) || 1;
+        const limit = Number(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
+        const properties = await Property.find(filter)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
 
         return res.status(200).json({
             message: "Properties fetched successfully",
