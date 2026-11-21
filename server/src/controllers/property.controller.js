@@ -99,19 +99,47 @@ export const getAllProperties = async (req, res) => {
         if (bedrooms !== undefined) {
             filter.bedrooms = Number(bedrooms);
         }
-        const page = Number(req.query.page) || 1;
-        const limit = Number(req.query.limit) || 10;
+
+        // Handle pagination: fetch the requested page and calculate the total pages.
+        const pageQuery = Number(req.query.page);
+        const limitQuery = Number(req.query.limit);
+
+        const page = Number.isInteger(pageQuery) && pageQuery > 0
+            ? pageQuery
+            : 1;
+
+        const limit = Number.isInteger(limitQuery) && limitQuery > 0
+            ? Math.min(limitQuery, 50)
+            : 10;
+
         const skip = (page - 1) * limit;
+        const sort = req.query.sort;
+
+        let sortOption = { createdAt: -1 };
+
+        if (sort === "price_asc") {
+            sortOption = { price: 1 };
+        } else if (sort === "price_desc") {
+            sortOption = { price: -1 };
+        }
 
         const properties = await Property.find(filter)
-            .sort({ createdAt: -1 })
+            .sort(sortOption)
             .skip(skip)
             .limit(limit);
+
+        const totalProperties = await Property.countDocuments(filter);
+        const totalPages = Math.ceil(totalProperties / limit);
+
 
         return res.status(200).json({
             message: "Properties fetched successfully",
             count: properties.length,
-            properties
+            success: true,
+            currentPage: page,
+            totalPages,
+            totalProperties,
+            properties,
         });
     } catch (error) {
         return res.status(500).json({
